@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX TRADER — Live Paper Trading</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===== LOADING OVERLAY ===== -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div style="margin-top:16px; font-family:var(--font-tech); letter-spacing:0.1em;">Fetching Live Market Data...</div>
+</div>
+
+<!-- ===== LANDING ===== -->
+<div id="landing">
+  <canvas id="landing-canvas"></canvas>
+  <div class="landing-content">
+    <div class="landing-logo">APEX TRADER</div>
+    <div class="landing-sub">Live Paper Trading Simulator</div>
+    <p class="landing-desc">
+      Learn to read charts, practice trading strategies, and build confidence using <strong>real-time market data</strong> — all with virtual money.
+    </p>
+    <div class="disclaimer">
+      <span>⚠ PAPER TRADING ONLY</span> — All trades use virtual currency. No real money is involved.
+    </div>
+    <div class="landing-buttons">
+      <button class="btn-primary" onclick="startTutorial()">▶ Start Tutorial</button>
+      <button class="btn-secondary" onclick="skipToTrading()">Skip Tutorial →</button>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-switch on" id="learn-toggle" onclick="this.classList.toggle('on')"></div>
+      <span>Continue learning tips while trading</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app">
+  <!-- NAV -->
+  <div class="topnav" id="topnav">
+    <div class="nav-logo">APEX</div>
+    <div class="nav-sep"></div>
+    <div class="nav-symbol">BTC/USD (Live)</div>
+    <div class="nav-price" id="nav-price">Loading...</div>
+    <div class="nav-change up" id="nav-change">--</div>
+    <div class="live-dot" id="live-dot"></div>
+
+    <div class="nav-sep"></div>
+
+    <div class="tf-group">
+      <button class="tf-btn active" data-tf="5">5m</button>
+      <button class="tf-btn" data-tf="15">15m</button>
+      <button class="tf-btn" data-tf="60">1h</button>
+      <button class="tf-btn" data-tf="240">4h</button>
+    </div>
+
+    <div class="nav-spacer"></div>
+
+    <button class="nav-icon-btn" title="Tutorial" onclick="resumeTutorial()" id="tut-resume-btn">📚</button>
+    <button class="nav-icon-btn" title="Glossary" onclick="openGlossary()">📖</button>
+    <button class="nav-icon-btn" title="Settings" onclick="openSettings()">⚙️</button>
+    <button class="nav-icon-btn" title="Reset" onclick="openReset()">↺</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-layout">
+    <!-- CHART -->
+    <div class="chart-section" id="chart-section">
+      <div class="chart-header">
+        <div class="indicator-btns">
+          <button class="ind-btn" data-ind="sma" onclick="toggleIndicator('sma',this)">SMA</button>
+          <button class="ind-btn" data-ind="ema" onclick="toggleIndicator('ema',this)">EMA</button>
+          <button class="ind-btn" data-ind="rsi" onclick="toggleIndicator('rsi',this)">RSI</button>
+          <button class="ind-btn" data-ind="vol" onclick="toggleIndicator('vol',this)">VOL</button>
+        </div>
+        <div style="flex:1"></div>
+        <button class="resume-tut-btn" id="tut-resume-small" onclick="resumeTutorial()" style="display:none">Resume Tutorial</button>
+      </div>
+
+      <div class="chart-wrap" id="chart-wrap">
+        <canvas id="chart-canvas"></canvas>
+        <div class="crosshair-price" id="crosshair-price"></div>
+        <div class="crosshair-time" id="crosshair-time"></div>
+        <div class="ohlc-display" id="ohlc-display">
+          <div class="ohlc-item"><span>O</span><span class="ohlc-o" id="ohlc-o">—</span></div>
+          <div class="ohlc-item"><span>H</span><span class="ohlc-h" id="ohlc-h">—</span></div>
+          <div class="ohlc-item"><span>L</span><span class="ohlc-l" id="ohlc-l">—</span></div>
+          <div class="ohlc-item"><span>C</span><span class="ohlc-c" id="ohlc-c">—</span></div>
+        </div>
+        <div class="news-ticker">
+          <div class="ticker-label">NEWS</div>
+          <div class="ticker-content" id="news-ticker-content">Loading market news...</div>
+        </div>
+      </div>
+
+      <div id="rsi-panel"><canvas id="rsi-canvas"></canvas></div>
+      <div id="volume-panel"><canvas id="vol-canvas"></canvas></div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel" id="right-panel">
+      <div class="panel-tabs">
+        <button class="panel-tab active" data-tab="trade" onclick="switchTab('trade',this)">Trade</button>
+        <button class="panel-tab" data-tab="portfolio" onclick="switchTab('portfolio',this)">Portfolio</button>
+        <button class="panel-tab" data-tab="history" onclick="switchTab('history',this)">History</button>
+        <button class="panel-tab" data-tab="journal" onclick="switchTab('journal',this)">Journal</button>
+      </div>
+
+      <div class="panel-content">
+        <!-- TRADE TAB -->
+        <div class="panel-section active" id="tab-trade">
+          <div class="stat-grid" style="margin-bottom:12px">
+            <div class="stat-box">
+              <div class="stat-label">Balance</div>
+              <div class="stat-value accent" id="balance-display">$10,000</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Equity</div>
+              <div class="stat-value" id="equity-display">$10,000</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Unrealized PnL</div>
+              <div class="stat-value" id="unreal-pnl">$0.00</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Realized PnL</div>
+              <div class="stat-value" id="real-pnl">$0.00</div>
+            </div>
+          </div>
+
+          <div class="trade-form" id="trade-form">
+            <div class="form-group">
+              <div class="form-label">
+                <span>Position Size (USD)</span>
+                <span class="hint" id="risk-hint">0% of balance</span>
+              </div>
+              <input type="number" class="form-input" id="size-input" value="500" min="10" step="10" oninput="updateRisk()">
+            </div>
+            <div class="form-group">
+              <div class="form-label"><span>Stop Loss (Price)</span><span class="hint">Optional</span></div>
+              <input type="number" class="form-input" id="sl-input" placeholder="e.g. 41000">
+            </div>
+            <div class="form-group">
+              <div class="form-label"><span>Take Profit (Price)</span><span class="hint">Optional</span></div>
+              <input type="number" class="form-input" id="tp-input" placeholder="e.g. 44000">
+            </div>
+            <div class="risk-bar-wrap">
+              <div style="display:flex;justify-content:space-between">
+                <span>Risk Level</span>
+                <span id="risk-pct">0%</span>
+              </div>
+              <div class="risk-bar"><div class="risk-fill" id="risk-fill" style="width:5%"></div></div>
+            </div>
+            <div class="trade-btns">
+              <button class="trade-buy" id="buy-btn" onclick="executeTrade('long')">↑ BUY LONG</button>
+              <button class="trade-sell" id="sell-btn" onclick="executeTrade('short')">↓ SELL SHORT</button>
+            </div>
+          </div>
+
+          <div style="margin-top:14px">
+            <div class="section-title">Open Positions</div>
+            <div id="open-positions"><div class="empty-state">No open positions.<br>Place a trade above.</div></div>
+          </div>
+        </div>
+
+        <!-- PORTFOLIO TAB -->
+        <div class="panel-section" id="tab-portfolio">
+          <div class="section-title">Account Summary</div>
+          <div class="stat-grid">
+            <div class="stat-box">
+              <div class="stat-label">Balance</div>
+              <div class="stat-value accent" id="port-balance">$10,000</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total PnL</div>
+              <div class="stat-value" id="port-total-pnl">$0.00</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Win Rate</div>
+              <div class="stat-value" id="port-winrate">—</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Trades</div>
+              <div class="stat-value" id="port-trades">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Best Trade</div>
+              <div class="stat-value green" id="port-best">—</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Worst Trade</div>
+              <div class="stat-value red" id="port-worst">—</div>
+            </div>
+          </div>
+          <div class="section-title" style="margin-top:14px">Open Positions</div>
+          <div id="port-positions"><div class="empty-state">No open positions.</div></div>
+        </div>
+
+        <!-- HISTORY TAB -->
+        <div class="panel-section" id="tab-history">
+          <div class="section-title">Trade History</div>
+          <div id="trade-history"><div class="empty-state">No closed trades yet.<br>Close a position to see history.</div></div>
+        </div>
+
+        <!-- JOURNAL TAB -->
+        <div class="panel-section" id="tab-journal">
+          <div class="section-title">Trading Journal</div>
+          <textarea class="journal-input" id="journal-input" placeholder="Write your trade notes here..."></textarea>
+          <button class="btn-secondary" style="width:100%;margin-bottom:12px;padding:8px" onclick="saveJournal()">Save Note</button>
+          <div id="journal-entries"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div class="bottom-bar">
+    <div class="bottom-stat">Market: <strong id="market-status" style="color:var(--green)">LIVE API</strong></div>
+    <div class="bottom-stat">Candles: <strong id="candle-count">0</strong></div>
+    <div class="bottom-stat">Wins: <strong id="win-count" style="color:var(--green)">0</strong></div>
+    <div class="bottom-stat">Losses: <strong id="loss-count" style="color:var(--red)">0</strong></div>
+    <div class="bottom-stat" style="margin-left:auto">Session PnL: <strong id="session-pnl">$0.00</strong></div>
+  </div>
+</div>
+
+<!-- ===== MODALS & OVERLAYS ===== -->
+<div id="tutorial-overlay" style="display:none">
+  <div class="tut-backdrop" id="tut-backdrop"></div>
+  <div class="tut-spotlight" id="tut-spotlight"></div>
+  <div class="tut-card" id="tut-card">
+    <div class="tut-card-header">
+      <span class="tut-step-badge" id="tut-badge">STEP 1 / 19</span>
+      <button class="tut-skip-btn" onclick="endTutorial()">Skip Tutorial ×</button>
+    </div>
+    <div class="tut-progress-bar"><div class="tut-progress-fill" id="tut-progress"></div></div>
+    <div class="tut-title" id="tut-title"></div>
+    <div class="tut-body" id="tut-body"></div>
+    <div class="tut-nav">
+      <button class="tut-prev" onclick="tutPrev()">← Back</button>
+      <button class="tut-next" onclick="tutNext()" id="tut-next-btn">Next →</button>
+    </div>
+  </div>
+</div>
+
+<div id="edu-panel">
+  <div class="edu-header">
+    <span class="edu-title">💡 Mentor Tip</span>
+    <button class="edu-close" onclick="document.getElementById('edu-panel').classList.remove('visible')">×</button>
+  </div>
+  <div class="edu-msg" id="edu-msg"></div>
+</div>
+
+<div id="notifications"></div>
+
+<div id="glossary-modal" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2>📖 GLOSSARY</h2>
+      <button class="edu-close" style="font-size:1.2rem" onclick="document.getElementById('glossary-modal').classList.remove('open')">×</button>
+    </div>
+    <div id="glossary-list"></div>
+  </div>
+</div>
+
+<div id="reset-modal" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <h2>↺ RESET SIMULATION</h2>
+    <p>This will reset your balance to $10,000, clear all positions and trade history. Are you sure?</p>
+    <div class="reset-btns" style="display: flex; gap: 12px; justify-content: center; margin-top:20px;">
+      <button class="btn-primary" onclick="doReset()">Reset Everything</button>
+      <button class="btn-secondary" onclick="document.getElementById('reset-modal').classList.remove('open')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="settings-modal" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <h2>⚙️ SETTINGS</h2>
+    <div class="form-group" style="margin-bottom:15px; text-align:left;">
+      <label class="form-label">Theme</label>
+      <select class="form-input" id="theme-select" onchange="changeTheme(this.value)">
+        <option value="dark">Dark Theme</option>
+        <option value="light">Light Theme</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:15px; text-align:left;">
+      <label class="form-label">Bullish (Up) Candle Color</label>
+      <input type="color" class="form-input" style="height:40px; padding:2px;" id="bull-color" value="#00e67a" onchange="changeColors()">
+    </div>
+    <div class="form-group" style="margin-bottom:15px; text-align:left;">
+      <label class="form-label">Bearish (Down) Candle Color</label>
+      <input type="color" class="form-input" style="height:40px; padding:2px;" id="bear-color" value="#ff3355" onchange="changeColors()">
+    </div>
+    <button class="btn-primary" style="margin-top:10px; width:100%" onclick="document.getElementById('settings-modal').classList.remove('open')">Save & Close</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+            </html> 
